@@ -45,12 +45,17 @@
 	})
 	
 	
+
+
+
 	var conn;
 	var stream;
 	var cams;
 	var camInUse;
 
+
 	getStream();
+
 	peer.on('open',function(id){
 		document.getElementById("my_peer_id").innerText = id;
 	})
@@ -62,7 +67,14 @@
 		
 		messages.innerText = messages.innerText + "\nSomebody joined !"
 		
+		
 		dataconnection.on('open',function(){
+
+
+			if(conn == null) connectToPeer(dataconnection.peer);
+			
+
+
 			dataconnection.on('data',function(data){
 				messages.innerText = messages.innerText + "\nOther: " + data;
 			})
@@ -83,15 +95,24 @@
 	})
 	
 	
-	
-	
-	
-	function connectToPeer(){
-		const conn_status = document.getElementById("conn_status");
+
+
+	//on click connect peer button
+	function clickConnectToPeer(){
 		const target_id = document.getElementById("target_id");
+		connectToPeer(target_id.value);
+	}
+
+
+	
+	
+	//connect to peer
+	function connectToPeer(peerId){
+		const conn_status = document.getElementById("conn_status");
+		
 		
 		conn_status.innerText = "Connecting"
-		conn = peer.connect(target_id.value)
+		conn = peer.connect(peerId)
 		
 		
 		conn.on('open',function(){
@@ -105,6 +126,7 @@
 	
 	
 	
+	//send message
 	function sendMessage(){
 		const to_be_sent = document.getElementById("to_be_sent")
 		const messages = document.getElementById("messages")
@@ -118,6 +140,8 @@
 	
 	
 	
+
+	//clear messages in message box
 	function clearMessage(){
 		const messages = document.getElementById("messages")
 		messages.innerText = ""
@@ -126,6 +150,7 @@
 	
 	
 
+	//do call in peer
 	function callPeer(){
 		const target_id = document.getElementById("target_id");
 		const call = peer.call(target_id.value,stream);
@@ -137,7 +162,7 @@
 	
 
 	
-	
+	//get video stream from the user cam
 	function getStream(){
 		/*
 			Overload resolution failed -> https://stackoverflow.com/questions/27120757/failed-to-execute-createobjecturl-on-url/33759534
@@ -160,9 +185,12 @@
 			  
 			  var cameraID;
 			  
+
+			  //use undefined because null and empty values don't work
 			  if(cameras.length <= 1) cameraID = undefined;
-			  else cameraID = cameras[1];
+			  else cameraID = cameras[0];
 			  
+
 
 			  showVideoStream(cameraID,cameras);
 
@@ -173,9 +201,14 @@
 
 
 
+
+
+	//show the stream video
 	function showVideoStream(cameraID,cameras){
 		var constraints = {video: {deviceId: {exact: cameraID}}};
-		camInUse = cameraID;
+		camInUse = cameraID;	//set the passed  camera id as the one in use
+
+
       	navigator.getUserMedia(constraints, function (dataStream) {
 			  stream = dataStream;
 
@@ -184,7 +217,7 @@
 			  
 			  cams = cameras;
 
-			  alert(stream.getTracks().length)
+			  
 		   }, function (err) {
 			alert(err)
 		});
@@ -198,7 +231,7 @@
 
 	
 	
-	
+	//when a video stream received
 	function addStreamReceivedListener(call){
 		call.on('stream',function(stream){
 				console.log("stream is coming")
@@ -209,8 +242,9 @@
 	
 
 
-	
+	//toggle camera to front or back
 	function changeCam(){
+		//if only one cam
 		if(cams.length <= 1) alert("This is the only cam")
 		else {
 
@@ -219,13 +253,16 @@
 			existingTrack.stop();
 			stream.removeTrack(existingTrack)
 
-			//the new track
+
+			//the new camera to be use
 			camInUse = cams[0] == camInUse? cams[1]:cams[0]
 
-			//create new track
+
+			//initiate new stream
 			var constraints = {video: {deviceId: {exact: camInUse}}};
 			navigator.getUserMedia(constraints, function (dataStream) {
 				  
+				  //create new track
 				  stream.addTrack(dataStream.getTracks()[0])
 
 
@@ -236,13 +273,18 @@
 			   }, function (err) {
 				alert(err)
 			});
+
+
 		
 		}
+
+		
 	}
 
 
 
 
+	//turn of video 
 	function turnOffVideo() {
 		var vidEnabled = stream.getTracks()[0].enabled 
 		stream.getTracks()[0].enabled  = vidEnabled == false
@@ -250,6 +292,7 @@
 	
 
 
+	//turn off audio
 	function turnOffAudio() {
 		var audioEnabled = stream.getTracks()[0].muted 
 		stream.getTracks()[0].muted  = audioEnabled == false
@@ -267,7 +310,7 @@
 
 
 <input type="text" id="target_id"/>
-<button type="button" onclick=connectToPeer()>Connect</button>
+<button type="button" onclick=clickConnectToPeer()>Connect</button>
 
 <div id="conn_status"></div>
 
@@ -281,7 +324,7 @@
 <button type="button" onclick=turnOffAudio()>Mute Audio</button>
 <button type="button" onclick=turnOffVideo()>Turn Off Video</button>
 
-<video id="my_vid" autoplay ></video> 
+<video id="my_vid" muted="muted" autoplay ></video> 
 </br></br>
 <video id="incoming_vid" autoplay></video> 
 
