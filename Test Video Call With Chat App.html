@@ -1,0 +1,293 @@
+<html>
+<script src="https://unpkg.com/peerjs@1.3.1/dist/peerjs.min.js"></script>
+<body>
+
+<script>
+
+	//use the proper stun and turn servers
+	var peer = new Peer({
+	  config: {'iceServers': [
+		{url:'stun:stun01.sipphone.com'},
+        {url:'stun:stun.ekiga.net'},
+        {url:'stun:stun.fwdnet.net'},
+        {url:'stun:stun.ideasip.com'},
+        {url:'stun:stun.iptel.org'},
+        {url:'stun:stun.rixtelecom.se'},
+        {url:'stun:stun.schlund.de'},
+        {url:'stun:stun.l.google.com:19302'},
+        {url:'stun:stun1.l.google.com:19302'},
+        {url:'stun:stun2.l.google.com:19302'},
+        {url:'stun:stun3.l.google.com:19302'},
+        {url:'stun:stun4.l.google.com:19302'},
+        {url:'stun:stunserver.org'},
+        {url:'stun:stun.softjoys.com'},
+        {url:'stun:stun.voiparound.com'},
+        {url:'stun:stun.voipbuster.com'},
+        {url:'stun:stun.voipstunt.com'},
+        {url:'stun:stun.voxgratia.org'},
+        {url:'stun:stun.xten.com'},
+        {
+            url: 'turn:numb.viagenie.ca',
+            credential: 'muazkh',
+            username: 'webrtc@live.com'
+        },
+        {
+            url: 'turn:192.158.29.39:3478?transport=udp',
+            credential: 'JZEOEt2V3Qb0y27GRntt2u2PAYA=',
+            username: '28224511:1379330808'
+        },
+        {
+            url: 'turn:192.158.29.39:3478?transport=tcp',
+            credential: 'JZEOEt2V3Qb0y27GRntt2u2PAYA=',
+            username: '28224511:1379330808'
+        }
+	  ]}
+	})
+	
+	
+	var conn;
+	var stream;
+	var cams;
+	var camInUse;
+
+	getStream();
+	peer.on('open',function(id){
+		document.getElementById("my_peer_id").innerText = id;
+	})
+	
+	
+	peer.on('connection',function(dataconnection){
+		
+		const messages = document.getElementById("messages")
+		
+		messages.innerText = messages.innerText + "\nSomebody joined !"
+		
+		dataconnection.on('open',function(){
+			dataconnection.on('data',function(data){
+				messages.innerText = messages.innerText + "\nOther: " + data;
+			})
+		})
+		
+			
+	})
+	
+	
+	
+	
+	//when call is received
+	peer.on('call',function(call){
+		console.log("somebody calling")
+		call.answer(stream)
+		addStreamReceivedListener(call)
+				
+	})
+	
+	
+	
+	
+	
+	function connectToPeer(){
+		const conn_status = document.getElementById("conn_status");
+		const target_id = document.getElementById("target_id");
+		
+		conn_status.innerText = "Connecting"
+		conn = peer.connect(target_id.value)
+		
+		
+		conn.on('open',function(){
+			conn_status.innerText = "Connected"
+			callPeer();
+			
+		})
+		
+		
+	}
+	
+	
+	
+	function sendMessage(){
+		const to_be_sent = document.getElementById("to_be_sent")
+		const messages = document.getElementById("messages")
+		const val = to_be_sent.value
+		
+		conn.send(val)
+		messages.innerText = messages.innerText + "\nYou: " + val;
+		
+		to_be_sent.value = "";
+	}
+	
+	
+	
+	function clearMessage(){
+		const messages = document.getElementById("messages")
+		messages.innerText = ""
+	}
+	
+	
+	
+
+	function callPeer(){
+		const target_id = document.getElementById("target_id");
+		const call = peer.call(target_id.value,stream);
+		addStreamReceivedListener(call)
+		console.log("calling")
+
+	}
+	
+	
+
+	
+	
+	function getStream(){
+		/*
+			Overload resolution failed -> https://stackoverflow.com/questions/27120757/failed-to-execute-createobjecturl-on-url/33759534
+
+			Requested device not found GetUserMedia -> try to tenable your camera and microphone
+
+			The code came from -> https://www.tutorialspoint.com/webrtc/webrtc_media_stream_apis.htm
+		*/
+
+	
+		  navigator.mediaDevices.enumerateDevices().then(function(devices) {
+		      var cameras = [];
+		      devices.forEach(function(device) {
+		        
+				if('videoinput' == device.kind) cameras.push(device.deviceId);
+				
+		      });
+		     
+
+			  
+			  var cameraID;
+			  
+			  if(cameras.length <= 1) cameraID = undefined;
+			  else cameraID = cameras[1];
+			  
+
+			  showVideoStream(cameraID,cameras);
+
+		});
+	}
+
+
+
+
+
+	function showVideoStream(cameraID,cameras){
+		var constraints = {video: {deviceId: {exact: cameraID}}};
+		camInUse = cameraID;
+      	navigator.getUserMedia(constraints, function (dataStream) {
+			  stream = dataStream;
+
+			  var video = document.getElementById('my_vid');
+			  video.srcObject = stream;
+			  
+			  cams = cameras;
+
+			  alert(stream.getTracks().length)
+		   }, function (err) {
+			alert(err)
+		});
+		
+		
+    }
+	
+		
+	
+	
+
+	
+	
+	
+	function addStreamReceivedListener(call){
+		call.on('stream',function(stream){
+				console.log("stream is coming")
+				var video = document.getElementById("incoming_vid"); 
+				video.srcObject =stream;
+		})
+	}
+	
+
+
+	
+	function changeCam(){
+		if(cams.length <= 1) alert("This is the only cam")
+		else {
+
+			//remove and stop existing track first
+			const existingTrack = stream.getTracks()[0];
+			existingTrack.stop();
+			stream.removeTrack(existingTrack)
+
+			//the new track
+			camInUse = cams[0] == camInUse? cams[1]:cams[0]
+
+			//create new track
+			var constraints = {video: {deviceId: {exact: camInUse}}};
+			navigator.getUserMedia(constraints, function (dataStream) {
+				  
+				  stream.addTrack(dataStream.getTracks()[0])
+
+
+				  var video = document.getElementById('my_vid');
+				  video.srcObject = dataStream;
+				  
+
+			   }, function (err) {
+				alert(err)
+			});
+		
+		}
+	}
+
+
+
+
+	function turnOffVideo() {
+		var vidEnabled = stream.getTracks()[0].enabled 
+		stream.getTracks()[0].enabled  = vidEnabled == false
+	}
+	
+
+
+	function turnOffAudio() {
+		var audioEnabled = stream.getTracks()[0].muted 
+		stream.getTracks()[0].muted  = audioEnabled == false
+	}
+	
+	
+	
+	
+	 
+			
+</script>
+
+<div>My Peer ID:</div>
+<div id="my_peer_id"></div>
+
+
+<input type="text" id="target_id"/>
+<button type="button" onclick=connectToPeer()>Connect</button>
+
+<div id="conn_status"></div>
+
+
+<input type="text" id="to_be_sent"/>
+<button type="button" onclick=sendMessage()>Send Message</button>
+<button type="button" onclick=clearMessage()>Clear Messages</button>\
+</br></br>
+
+<button type="button" onclick=changeCam()>Change Cam</button>
+<button type="button" onclick=turnOffAudio()>Mute Audio</button>
+<button type="button" onclick=turnOffVideo()>Turn Off Video</button>
+
+<video id="my_vid" autoplay ></video> 
+</br></br>
+<video id="incoming_vid" autoplay></video> 
+
+<div id="messages"></div>
+
+
+
+</body>
+</html>	
