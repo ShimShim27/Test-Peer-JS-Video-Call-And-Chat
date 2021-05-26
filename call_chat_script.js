@@ -37,15 +37,15 @@ var peer = new Peer(uuidv4(),{
 
 var conn;	//for chats
 var mediaConnection	//for calls
+var receivedConnection //obtained from peer on 'connection'
 
 var stream;
 var cams;
 var camInUse;
 
 
-//get user's video stream
-getStream();
 
+getStream();
 addPeerListeners();
 
 
@@ -53,34 +53,37 @@ addPeerListeners();
 
 function addPeerListeners(){
 
+	
 	peer.on('open',function(id){
 		document.getElementById("my_peer_id").innerText = id;
-	})
 
+	})
 
 
 
 	peer.on('connection',function(dataconnection){
 		
-		showMessage("Somebody joined !!");
-		
-		
-		dataconnection.on('open',function(){
+			showMessage("Somebody joined !!");
+			
+			
+			dataconnection.on('open',function(){
 
-			//when there are no existing connection , connect back to the offerer
-			if(conn == null) connectToPeer(dataconnection.peer);
+				//connect back to offerrer
+				if(conn == null) connectToPeer(dataconnection.peer);
+				
+
+
+				dataconnection.on('data',function(data){
+					showMessage("Other: " + data)
+				})
+
+
+				receivedConnection = dataconnection;
 			
 
-
-			dataconnection.on('data',function(data){
-				showMessage("Other: " + data)
 			})
-
-
-
-		})
-		
 			
+				
 	})
 
 
@@ -88,7 +91,7 @@ function addPeerListeners(){
 
 
 
-	//when error happened
+		
 	peer.on('error',function(err){
 		console.log(err)
 	})
@@ -96,7 +99,7 @@ function addPeerListeners(){
 
 
 
-	//when call is received
+	
 	peer.on('call',function(call){
 		console.log("somebody calling")
 		addStreamReceivedListener(call)
@@ -104,12 +107,17 @@ function addPeerListeners(){
 		
 				
 	})
+
+
+
+
+	
 }
 
 
 
 
-//on click connect peer button
+
 function clickConnectToPeer(){
 	const target_id = document.getElementById("target_id");
 	connectToPeer(target_id.value);
@@ -118,7 +126,7 @@ function clickConnectToPeer(){
 
 
 
-//connect to peer
+
 function connectToPeer(peerId){
 	const conn_status = document.getElementById("conn_status");
 	
@@ -129,20 +137,43 @@ function connectToPeer(peerId){
 	
 	conn.on('open',function(){
 		conn_status.innerText = "Connected"
-
-		//if mediaConnection is undefined , you must be the initiator
+		
 		if(mediaConnection == undefined) callPeer();
 
 
+		close => {
+			conn_status.innerText = "Not Connected"
+			endCall();	//using end call here instead in mediaConnection because that won't work according to https://github.com/peers/peerjs/issues/87
+		}
+
+
+		conn.on('close',function(){
+			close()
+		})
+
+
+
+		if(receivedConnection != undefined){
+			receivedConnection.on('close',function(){
+				close()
+			})
+		}
+		
+
 		
 	})
+
+
+
+
+	
 	
 	
 }
 
 
 
-//send message
+
 function sendMessage(){
 	const to_be_sent = document.getElementById("to_be_sent")
 	const val = to_be_sent.value
@@ -156,7 +187,7 @@ function sendMessage(){
 
 
 
-//clear messages in message box
+
 function clearMessage(){
 	const messages = document.getElementById("messages")
 	messages.innerText = ""
@@ -165,7 +196,7 @@ function clearMessage(){
 
 
 
-//do call in peer
+
 function callPeer(){
 	const target_id = document.getElementById("target_id");
 	const call = peer.call(target_id.value,stream);
@@ -180,26 +211,32 @@ function callPeer(){
 
 
 
-//ending data and media connection
+
 function endCall(){
-	if(conn != undefined) conn.close();
-	if(mediaConnection != undefined) mediaConnection.close()
+	var atLeastOneConnectionClosed = false;
+	if(conn != undefined) conn.close() ; atLeastOneConnectionClosed = true;
+	if(mediaConnection != undefined) mediaConnection.close() ; atLeastOneConnectionClosed = true;
+	if(receivedConnection != undefined) receivedConnection.close() ; atLeastOneConnectionClosed = true;
+
 
 	conn = undefined;
 	mediaConnection = undefined;
+
+	if (atLeastOneConnectionClosed) {
+		console.log("Connection closed")
+		showMessage("Connection closed")
+	}
 }
 
 
 
 
-//get video stream from the user cam
+
 function getStream(){
 	/*
 		Overload resolution failed -> https://stackoverflow.com/questions/27120757/failed-to-execute-createobjecturl-on-url/33759534
 
-		Requested device not found GetUserMedia -> try to tenable your camera and microphone
-
-		The code came from -> https://www.tutorialspoint.com/webrtc/webrtc_media_stream_apis.htm
+		Requested device not found GetUserMedia -> try to enable your camera and microphone
 	*/
 
 
@@ -276,25 +313,17 @@ function addStreamReceivedListener(call){
 
 	mediaConnection.on('error',function(err){
 		console.log("Error call")
-		endCall();
+		conn.close();
 	})
 
 
-
-
-	mediaConnection.on('close',function(){
-		//end call only if there are still existing connections
-		if (mediaConnection != undefined || conn != undefined) endCall();
-		console.log("Call close");
-		
-	})
 }
 
 
 
-//toggle camera to front or back
+
 function changeCam(){
-	//if only one cam
+	
 	if(cams.length<=1) alert("This is the only cam")
 	else {
 
@@ -303,10 +332,9 @@ function changeCam(){
 		existingTrack.stop();
 		stream.removeTrack(existingTrack)
 
-
-		//the new camera to be use
 		camInUse = cams[0] == camInUse? cams[1]:cams[0]
 	
+
 
 		//initiate new stream
 		var constraints = {video: {deviceId: {exact: camInUse}}};
@@ -321,7 +349,7 @@ function changeCam(){
 
 
 				if(conn != null && conn != undefined){
-					//new call with new stream
+		
 					const call = peer.call(conn.peer,stream);
 					addStreamReceivedListener(call)
 				}
