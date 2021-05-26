@@ -218,7 +218,8 @@ function endCall(){
 
 	conn = undefined;
 	mediaConnection = undefined;
-
+	receivedConnection = undefined;
+	
 	if (atLeastOneConnectionClosed) {
 		console.log("Connection closed")
 		showMessage("Connection closed")
