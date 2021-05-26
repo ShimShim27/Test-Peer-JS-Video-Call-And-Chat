@@ -78,6 +78,10 @@ function addPeerListeners(){
 				})
 
 
+				dataconnection.on('close',function(){
+					endCall();	//using end call here instead in mediaConnection because that won't work according to https://github.com/peers/peerjs/issues/87
+				})
+
 				receivedConnection = dataconnection;
 			
 
@@ -141,25 +145,15 @@ function connectToPeer(peerId){
 		if(mediaConnection == undefined) callPeer();
 
 
-		close => {
-			conn_status.innerText = "Not Connected"
-			endCall();	//using end call here instead in mediaConnection because that won't work according to https://github.com/peers/peerjs/issues/87
-		}
+	
 
 
 
 		conn.on('close',function(){
-			close()
+			endCall();	//using end call here instead in mediaConnection because that won't work according to https://github.com/peers/peerjs/issues/87
 		})
 
 
-
-		if(receivedConnection != undefined){
-			receivedConnection.on('close',function(){
-				close()
-			})
-		}
-		
 
 		
 	})
@@ -214,6 +208,8 @@ function callPeer(){
 
 
 function endCall(){
+	document.getElementById("conn_status").innerText = "Not Connected"
+
 	var atLeastOneConnectionClosed = false;
 	if(conn != undefined) conn.close() ; atLeastOneConnectionClosed = true;
 	if(mediaConnection != undefined) mediaConnection.close() ; atLeastOneConnectionClosed = true;
@@ -371,16 +367,16 @@ function changeCam(){
 
 
 
-//turn of video 
-function turnOffVideo() {
+
+function toggleVideo() {
 	var vidEnabled = stream.getTracks()[0].enabled 
 	stream.getTracks()[0].enabled  = vidEnabled == false
 }
 
 
 
-//turn off audio
-function turnOffAudio() {
+
+function toggleAudio() {
 	var audioEnabled = stream.getTracks()[0].muted 
 	stream.getTracks()[0].muted  = audioEnabled == false
 }
