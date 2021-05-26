@@ -1,4 +1,7 @@
 video {
   -webkit-transform: scaleX(-1);
   transform: scaleX(-1);
+ 
+  height: 500px;
+  width: 500px
 }
