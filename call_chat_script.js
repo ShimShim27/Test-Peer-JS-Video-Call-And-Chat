@@ -35,65 +35,76 @@ var peer = new Peer(uuidv4(),{
 
 
 
-var conn;
+var conn;	//for chats
+var mediaConnection	//for calls
+
 var stream;
 var cams;
 var camInUse;
 
+
 //get user's video stream
 getStream();
 
-
-
-peer.on('open',function(id){
-	document.getElementById("my_peer_id").innerText = id;
-})
+addPeerListeners();
 
 
 
 
-peer.on('connection',function(dataconnection){
-	
-	const messages = document.getElementById("messages")
-	
-	messages.innerText = messages.innerText + "\nSomebody joined !"
-	
-	
-	dataconnection.on('open',function(){
+function addPeerListeners(){
 
-		//when there are no existing connection , connect back to the offerer
-		if(conn == null) connectToPeer(dataconnection.peer);
-		
-
-
-		dataconnection.on('data',function(data){
-			messages.innerText = messages.innerText + "\nOther: " + data;
-		})
+	peer.on('open',function(id){
+		document.getElementById("my_peer_id").innerText = id;
 	})
-	
+
+
+
+
+	peer.on('connection',function(dataconnection){
 		
-})
+		showMessage("Somebody joined !!");
+		
+		
+		dataconnection.on('open',function(){
 
-
-
-
-
-
-//when error happened
-peer.on('error',function(err){
-	console.log(err)
-})
-
-
-
-
-//when call is received
-peer.on('call',function(call){
-	console.log("somebody calling")
-	call.answer(stream)
-	addStreamReceivedListener(call)
+			//when there are no existing connection , connect back to the offerer
+			if(conn == null) connectToPeer(dataconnection.peer);
 			
-})
+
+
+			dataconnection.on('data',function(data){
+				showMessage("Other: " + data)
+			})
+
+
+
+		})
+		
+			
+	})
+
+
+
+
+
+
+	//when error happened
+	peer.on('error',function(err){
+		console.log(err)
+	})
+
+
+
+
+	//when call is received
+	peer.on('call',function(call){
+		console.log("somebody calling")
+		addStreamReceivedListener(call)
+		call.answer(stream)
+		
+				
+	})
+}
 
 
 
@@ -118,7 +129,11 @@ function connectToPeer(peerId){
 	
 	conn.on('open',function(){
 		conn_status.innerText = "Connected"
-		callPeer();
+
+		//if mediaConnection is undefined , you must be the initiator
+		if(mediaConnection == undefined) callPeer();
+
+
 		
 	})
 	
@@ -130,11 +145,10 @@ function connectToPeer(peerId){
 //send message
 function sendMessage(){
 	const to_be_sent = document.getElementById("to_be_sent")
-	const messages = document.getElementById("messages")
 	const val = to_be_sent.value
 	
 	conn.send(val)
-	messages.innerText = messages.innerText + "\nYou: " + val;
+	showMessage("You: " + val)
 	
 	to_be_sent.value = "";
 }
@@ -158,6 +172,21 @@ function callPeer(){
 	addStreamReceivedListener(call)
 	console.log("calling")
 
+}
+
+
+
+
+
+
+
+//ending data and media connection
+function endCall(){
+	if(conn != undefined) conn.close();
+	if(mediaConnection != undefined) mediaConnection.close()
+
+	conn = undefined;
+	mediaConnection = undefined;
 }
 
 
@@ -234,10 +263,30 @@ function showVideoStream(cameraID,cameras){
 
 //when a video stream received
 function addStreamReceivedListener(call){
-	call.on('stream',function(stream){
+	mediaConnection = call;
+
+
+	mediaConnection.on('stream',function(stream){
 			console.log("stream is coming")
 			var video = document.getElementById("incoming_vid"); 
 			video.srcObject =stream;
+	})
+
+
+
+	mediaConnection.on('error',function(err){
+		console.log("Error call")
+		endCall();
+	})
+
+
+
+
+	mediaConnection.on('close',function(){
+		//end call only if there are still existing connections
+		if (mediaConnection != undefined || conn != undefined) endCall();
+		console.log("Call close");
+		
 	})
 }
 
@@ -317,6 +366,15 @@ function uuidv4() {
 	var r = Math.random() * 16 | 0, v = c == 'x' ? r : (r & 0x3 | 0x8);
 	return v.toString(16);
   });
+}
+
+
+
+
+//for showing messages in message box
+function showMessage(mess){
+	const messages = document.getElementById("messages")
+	messages.innerText += "\n" + mess;
 }
 
 
