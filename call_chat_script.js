@@ -147,6 +147,7 @@ function connectToPeer(peerId){
 		}
 
 
+
 		conn.on('close',function(){
 			close()
 		})
