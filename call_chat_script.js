@@ -320,7 +320,3 @@ function uuidv4() {
 }
 
 
-
-function connectToRandom(){
-	
-}
