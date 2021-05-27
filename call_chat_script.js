@@ -42,6 +42,7 @@ var receivedConnection //obtained from peer on 'connection'
 var stream;
 var cams;
 var camInUse;
+var receivingCallsEnabled = true;
 
 
 
@@ -68,7 +69,19 @@ function addPeerListeners(){
 		dataconnection.on('open',function(){
 
 
-			if(receivedConnection == undefined){
+			if (!receivingCallsEnabled) {
+				dataconnection.close();
+				console.log("Incoming call dropped because receiving calls are disabled")
+			}
+
+
+			else if (receivedConnection != undefined){	
+				dataconnection.close();
+				console.log("Incoming call dropped because there is existing connection")
+			}
+
+
+			else {	
 				showMessage("Somebody joined !!");
 
 
@@ -91,10 +104,7 @@ function addPeerListeners(){
 			}
 
 
-			else {	
-				dataconnection.close();
-				console.log("Incoming call dropped because there is existing connection")
-			}
+			
 			
 	
 
@@ -121,9 +131,14 @@ function addPeerListeners(){
 
 	
 	peer.on('call',function(call){
-		console.log("somebody calling")
-		addStreamReceivedListener(call)
-		call.answer(stream)
+
+		if(receivingCallsEnabled){
+			console.log("somebody calling")
+			addStreamReceivedListener(call)
+			call.answer(stream)
+
+		}
+		
 		
 				
 	})
@@ -148,33 +163,38 @@ function clickConnectToPeer(){
 
 
 function connectToPeer(peerId){
-	endCall();
+	if(receivingCallsEnabled){
+		endCall();
 
-	const conn_status = document.getElementById("conn_status");
-	
-	
-	conn_status.innerText = "Connecting"
-	conn = peer.connect(peerId)
-	
-	
-	conn.on('open',function(){
-		conn_status.innerText = "Connected"
+		const conn_status = document.getElementById("conn_status");
 		
-		if(mediaConnection == undefined) callPeer();
+		
+		conn_status.innerText = "Connecting"
+		conn = peer.connect(peerId)
+		
+		
+		conn.on('open',function(){
+			conn_status.innerText = "Connected"
+			
+			if(mediaConnection == undefined) callPeer();
 
 
-	
+		
 
 
 
-		conn.on('close',function(){
-			endCall();	//using end call here instead in mediaConnection because that won't work according to https://github.com/peers/peerjs/issues/87
+			conn.on('close',function(){
+				endCall();	//using end call here instead in mediaConnection because that won't work according to https://github.com/peers/peerjs/issues/87
+			})
+
+
+
+			
 		})
+	}
 
 
-
-		
-	})
+	else alert("Enable receiving calls first");
 
 
 
@@ -410,6 +430,19 @@ function changeCam(){
 	}
 
 
+}
+
+
+
+
+
+function toggleReceivingCallsEnabled(){
+	receivingCallsEnabled = !receivingCallsEnabled
+
+	var stat = "Receiving calls disabled";
+	if(receivingCallsEnabled) stat = "Receiving calls enabled";
+
+	document.getElementById("receiving_calls_stat").innerText = stat;
 }
 
 
