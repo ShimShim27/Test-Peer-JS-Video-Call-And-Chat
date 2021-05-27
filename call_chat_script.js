@@ -450,16 +450,24 @@ function toggleReceivingCallsEnabled(){
 
 
 function toggleVideo() {
-	var vidEnabled = stream.getTracks()[0].enabled 
-	stream.getTracks()[0].enabled  = vidEnabled == false
+	const tracksList =stream.getVideoTracks();
+
+  var vidEnabled = tracksList[0].enabled;
+  tracksList.forEach(function(track){
+      track.enabled = !vidEnabled;
+  })
 }
 
 
 
 
 function toggleAudio() {
-	var audioEnabled = stream.getTracks()[0].muted 
-	stream.getTracks()[0].muted  = audioEnabled == false
+	 const tracksList =stream.getAudioTracks();
+
+		var audioEnabled = tracksList[0].enabled;
+		tracksList.forEach(function(track){
+		    track.enabled = !audioEnabled;
+		})
 }
 
 
