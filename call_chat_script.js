@@ -62,11 +62,15 @@ function addPeerListeners(){
 
 
 	peer.on('connection',function(dataconnection){
-		
-			showMessage("Somebody joined !!");
-			
-			
-			dataconnection.on('open',function(){
+
+
+
+		dataconnection.on('open',function(){
+
+
+			if(receivedConnection == undefined){
+				showMessage("Somebody joined !!");
+
 
 				//connect back to offerrer
 				if(conn == null) connectToPeer(dataconnection.peer);
@@ -82,10 +86,21 @@ function addPeerListeners(){
 					endCall();	//using end call here instead in mediaConnection because that won't work according to https://github.com/peers/peerjs/issues/87
 				})
 
-				receivedConnection = dataconnection;
-			
+				receivedConnection = dataconnection;		
 
-			})
+			}
+
+
+			else {	
+				dataconnection.close();
+				console.log("Incoming call dropped because there is existing connection")
+			}
+			
+	
+
+		})
+		
+			
 			
 				
 	})
@@ -98,6 +113,7 @@ function addPeerListeners(){
 		
 	peer.on('error',function(err){
 		console.log(err)
+		endCall();
 	})
 
 
@@ -132,6 +148,8 @@ function clickConnectToPeer(){
 
 
 function connectToPeer(peerId){
+	endCall();
+
 	const conn_status = document.getElementById("conn_status");
 	
 	
@@ -211,19 +229,37 @@ function endCall(){
 	document.getElementById("conn_status").innerText = "Not Connected"
 
 	var atLeastOneConnectionClosed = false;
-	if(conn != undefined) conn.close() ; atLeastOneConnectionClosed = true;
-	if(mediaConnection != undefined) mediaConnection.close() ; atLeastOneConnectionClosed = true;
-	if(receivedConnection != undefined) receivedConnection.close() ; atLeastOneConnectionClosed = true;
+	if(conn != undefined) {
+		conn.close()
+		atLeastOneConnectionClosed = true;
+	}
+
+	if(mediaConnection != undefined) {
+		mediaConnection.close();
+		atLeastOneConnectionClosed = true;
+	}
+
+
+	if(receivedConnection != undefined) {
+		receivedConnection.close();
+		atLeastOneConnectionClosed = true;
+	}
 
 
 	conn = undefined;
 	mediaConnection = undefined;
 	receivedConnection = undefined;
 	
+
+
+
 	if (atLeastOneConnectionClosed) {
 		console.log("Connection closed")
 		showMessage("Connection closed")
 	}
+
+
+
 }
 
 
@@ -257,12 +293,14 @@ function getStream(){
 		  
 
 		  //use undefined because null and empty values don't work
+
 		  if(cameras.length <= 1) cameraID = undefined;
 		  else cameraID = cameras[0];
 		  
+		  if(audioID.length <= 0) audioID = undefined;
 
 
-		  showVideoStream(cameraID,cameras);
+		  showVideoStream(cameraID,cameras,audioID);
 
 	});
 }
@@ -319,8 +357,8 @@ function addStreamReceivedListener(call){
 
 
 	mediaConnection.on('error',function(err){
-		console.log("Error call")
-		conn.close();
+		console.log("Error call: " + err)
+		endCall();
 	})
 
 
