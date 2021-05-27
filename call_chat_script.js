@@ -240,11 +240,16 @@ function getStream(){
 
 	  navigator.mediaDevices.enumerateDevices().then(function(devices) {
 	      var cameras = [];
+	      var audioID = "";
 	      devices.forEach(function(device) {
 	        
-			if('videoinput' == device.kind) cameras.push(device.deviceId);
+					if('videoinput' == device.kind) cameras.push(device.deviceId);
+					else if('audioinput' == device.kind) audioID = device.deviceId;
 			
 	      });
+
+
+
 	     
 
 		  
@@ -269,8 +274,12 @@ function getStream(){
 
 
 //show the stream video
-function showVideoStream(cameraID,cameras){
-	var constraints = {video: {deviceId: {exact: cameraID}}};
+function showVideoStream(cameraID,cameras,audioID){
+	var constraints = {video: {deviceId: cameraID} , 
+		audio: {deviceId: audioID , echoCancellation:true , noiseSuppression:true}
+	};
+
+
 	camInUse = cameraID;	//set the passed  camera id as the one in use
 
 
