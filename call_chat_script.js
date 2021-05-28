@@ -1,4 +1,4 @@
-//use the proper stun and turn servers
+//Use the proper stun and turn servers. The host is not mine , use your own.
 var peer = new Peer(uuidv4(),{
 	host: 'videodesk-ennesimo.herokuapp.com',
 	port: 443,
