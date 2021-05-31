@@ -397,8 +397,32 @@ function changeCam(){
 		existingTrack.stop();
 		stream.removeTrack(existingTrack)
 
-		camInUse = cams[0] == camInUse? cams[1]:cams[0]
+		const flipCameraX = (boolean)=>{
+        const value = boolean?-1:1
+        const myVid = document.getElementById("my_vid")
+        myVid.style.transform = `scaleX(${value})`
+        myVid.style.webkitTransform = `scaleX(${value})`
+    }
+
+
+
+    stream.getVideoTracks().forEach((track)=>{
+        track.stop();
+        stream.removeTrack(track)
+    })
+
+
+
+     if(cams[0] == camInUse){
+        camInUse = cams[1];
+        flipCameraX(false)
+     }
+     else{
+        camInUse = cams[0];
+        flipCameraX(true)
+     }
 	
+
 
 
 		//initiate new stream
