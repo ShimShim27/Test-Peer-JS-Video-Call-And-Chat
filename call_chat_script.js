@@ -1,5 +1,5 @@
 //Use the proper stun and turn servers. The host is not mine , use your own.
-var peer = new Peer(uuidv4(),{
+let peer = new Peer(uuidv4(),{
 	host: 'videodesk-ennesimo.herokuapp.com',
 	port: 443,
 	secure:true,
@@ -35,14 +35,14 @@ var peer = new Peer(uuidv4(),{
 
 
 
-var conn;	//for chats
-var mediaConnection	//for calls
-var receivedConnection //obtained from peer on 'connection'
+let conn;	//for chats
+let mediaConnection	//for calls
+let receivedConnection //obtained from peer on 'connection'
 
-var stream;
-var cams;
-var camInUse;
-var receivingCallsEnabled = true;
+let stream;
+let cams;
+let camInUse;
+let receivingCallsEnabled = true;
 
 
 
@@ -54,7 +54,7 @@ addPeerListeners();
 
 function addPeerListeners(){
 
-	
+
 	peer.on('open',function(id){
 		document.getElementById("my_peer_id").innerText = id;
 
@@ -248,7 +248,7 @@ function callPeer(){
 function endCall(){
 	document.getElementById("conn_status").innerText = "Not Connected"
 
-	var atLeastOneConnectionClosed = false;
+	let atLeastOneConnectionClosed = false;
 	if(conn != undefined) {
 		conn.close()
 		atLeastOneConnectionClosed = true;
@@ -295,8 +295,8 @@ function getStream(){
 
 
 	  navigator.mediaDevices.enumerateDevices().then(function(devices) {
-	      var cameras = [];
-	      var audioID = "";
+	      let cameras = [];
+	      let audioID = "";
 	      devices.forEach(function(device) {
 	        
 					if('videoinput' == device.kind) cameras.push(device.deviceId);
@@ -309,7 +309,7 @@ function getStream(){
 	     
 
 		  
-		  var cameraID;
+		  let cameraID;
 		  
 
 		  //use undefined because null and empty values don't work
@@ -333,7 +333,7 @@ function getStream(){
 
 //show the stream video
 function showVideoStream(cameraID,cameras,audioID){
-	var constraints = {video: {deviceId: cameraID} , 
+	let constraints = {video: {deviceId: cameraID} , 
 		audio: {deviceId: audioID , echoCancellation:true , noiseSuppression:true}
 	};
 
@@ -344,7 +344,7 @@ function showVideoStream(cameraID,cameras,audioID){
   	navigator.getUserMedia(constraints, function (dataStream) {
 		  stream = dataStream;
 
-		  var video = document.getElementById('my_vid');
+		  let video = document.getElementById('my_vid');
 		  video.srcObject = stream;
 		  
 		  cams = cameras;
@@ -370,7 +370,7 @@ function addStreamReceivedListener(call){
 
 	mediaConnection.on('stream',function(stream){
 			console.log("stream is coming")
-			var video = document.getElementById("incoming_vid"); 
+			let video = document.getElementById("incoming_vid"); 
 			video.srcObject =stream;
 	})
 
@@ -426,13 +426,13 @@ function changeCam(){
 
 
 		//initiate new stream
-		var constraints = {video: {deviceId: {exact: camInUse}}};
+		let constraints = {video: {deviceId: {exact: camInUse}}};
 		navigator.getUserMedia(constraints, function (dataStream) {
 			  
 			  
 				stream = dataStream;
 
-				var video = document.getElementById('my_vid');
+				let video = document.getElementById('my_vid');
 				video.srcObject = dataStream;
 
 
@@ -463,7 +463,7 @@ function changeCam(){
 function toggleReceivingCallsEnabled(){
 	receivingCallsEnabled = !receivingCallsEnabled
 
-	var stat = "Receiving calls disabled";
+	let stat = "Receiving calls disabled";
 	if(receivingCallsEnabled) stat = "Receiving calls enabled";
 
 	document.getElementById("receiving_calls_stat").innerText = stat;
@@ -476,7 +476,7 @@ function toggleReceivingCallsEnabled(){
 function toggleVideo() {
 	const tracksList =stream.getVideoTracks();
 
-  var vidEnabled = tracksList[0].enabled;
+  let vidEnabled = tracksList[0].enabled;
   tracksList.forEach(function(track){
       track.enabled = !vidEnabled;
   })
@@ -488,7 +488,7 @@ function toggleVideo() {
 function toggleAudio() {
 	 const tracksList =stream.getAudioTracks();
 
-		var audioEnabled = tracksList[0].enabled;
+		let audioEnabled = tracksList[0].enabled;
 		tracksList.forEach(function(track){
 		    track.enabled = !audioEnabled;
 		})
@@ -501,7 +501,7 @@ function toggleAudio() {
 //Creates uuid for our id. Code from https://stackoverflow.com/questions/105034/how-to-create-a-guid-uuid
 function uuidv4() {
   return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
-	var r = Math.random() * 16 | 0, v = c == 'x' ? r : (r & 0x3 | 0x8);
+	let r = Math.random() * 16 | 0, v = c == 'x' ? r : (r & 0x3 | 0x8);
 	return v.toString(16);
   });
 }
