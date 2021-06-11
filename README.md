@@ -1,4 +1,4 @@
-# Test-Peer-JS-Video-Call-And-Chat
+# Video Call And Chat Using Peer JS
 Using peer js to create video call and chat app
 
 ## Description
